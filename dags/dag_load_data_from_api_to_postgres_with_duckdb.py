@@ -43,14 +43,14 @@ def create_table_with_duckdb(**context):
         raise RuntimeError(f"Failed to create table: {e}")
 
 
-API_URL = "https://official-joke-api.appspot.com/jokes/random"
-
-
 def get_data_from_api(**context):
+
+    api_url = "https://official-joke-api.appspot.com/jokes/random"
+
     try:
-        request = requests.get(API_URL)
+        request = requests.get(api_url)
     except Exception as e:
-        raise RuntimeError(f"Failed to get data from API: {e}. Using URL: {API_URL}")
+        raise RuntimeError(f"Failed to get data from API: {e}. Using URL: {api_url}")
     joke_data = request.json()
     ti = context["ti"]
     ti.xcom_push(key="joke_data_json", value=joke_data)
@@ -80,6 +80,11 @@ def load_data_to_postgres(**context):
                 '{joke_data["setup"].replace("'", "''")}', 
                 '{joke_data["punchline"].replace("'", "''")}'
             )
+        ON CONFLICT (id) DO UPDATE SET 
+            load_ts = EXCLUDED.load_ts,
+            type = EXCLUDED.type,
+            setup = EXCLUDED.setup,
+            punchline = EXCLUDED.punchline
         ;
     """
 
@@ -108,7 +113,7 @@ with DAG(
     default_args=default_args,
     catchup=True,
     start_date=datetime(2025, 12, 1),
-    schedule_interval="0 10 * * *",
+    schedule_interval="0 * * * *",
     tags=DAG_TAGS,
 ) as dag:
 
