@@ -11,8 +11,8 @@ from airflow.operators.empty import EmptyOperator
 
 import logging
 
-def create_table_with_duckdb(**context):
 
+def connect_to_postgres() -> str:
     credentials = WorkingWithPostgres.get_db_credentials()
 
     alias = WorkingWithPostgres.connect_to_postgres_via_duckdb(
@@ -26,6 +26,11 @@ def create_table_with_duckdb(**context):
 
     if not alias:
         raise RuntimeError("Failed to connect to PostgreSQL")
+    return alias
+
+def create_table_with_duckdb(**context):
+
+    alias = connect_to_postgres()
 
     try:
         duckdb.sql(
@@ -45,16 +50,7 @@ def create_table_with_duckdb(**context):
 
 def create_tmp_table(**context):
 
-    credentials = WorkingWithPostgres.get_db_credentials()
-
-    alias = WorkingWithPostgres.connect_to_postgres_via_duckdb(
-        dbname=credentials["POSTGRES_DB"],
-        host=credentials["POSTGRES_HOST"],
-        port=credentials["POSTGRES_PORT"],
-        user=credentials["POSTGRES_USER_NAME"],
-        password=credentials["POSTGRES_PASSWORD"],
-        alias="db"
-    )
+    alias = connect_to_postgres()
 
     try:
         duckdb.sql(
@@ -79,16 +75,8 @@ def load_to_tmp_table(**context):
 
     api_url = "https://official-joke-api.appspot.com/jokes/random"
 
-    credentials = WorkingWithPostgres.get_db_credentials()
+    alias = connect_to_postgres()
 
-    alias = WorkingWithPostgres.connect_to_postgres_via_duckdb(
-        dbname=credentials["POSTGRES_DB"],
-        host=credentials["POSTGRES_HOST"],
-        port=credentials["POSTGRES_PORT"],
-        user=credentials["POSTGRES_USER_NAME"],
-        password=credentials["POSTGRES_PASSWORD"],
-        alias="db"
-    )
     try:
         request = requests.get(api_url)
     except Exception as e:
@@ -116,16 +104,7 @@ def load_to_tmp_table(**context):
 
 def load_data_to_postgres(**context):
 
-    credentials = WorkingWithPostgres.get_db_credentials()
-
-    alias = WorkingWithPostgres.connect_to_postgres_via_duckdb(
-        dbname=credentials["POSTGRES_DB"],
-        host=credentials["POSTGRES_HOST"],
-        port=credentials["POSTGRES_PORT"],
-        user=credentials["POSTGRES_USER_NAME"],
-        password=credentials["POSTGRES_PASSWORD"],
-        alias="db"
-    )
+    alias = connect_to_postgres()
 
     try:
         duckdb.sql(
