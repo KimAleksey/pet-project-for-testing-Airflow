@@ -62,8 +62,10 @@ ec7ba1e1f53b
 gunzip -c <file_path> | docker exec -i <container_name> psql -U postgres
 ```
 
-Где:
+Например:
+gunzip -c "/Users/kimaleksei/Downloads/demo-20250901-3m.sql.gz" | docker exec -i 841597093ba0 psql -U postgres
 
+Где:
 * `<file_path>` — путь к скачанному файлу `.sql.gz`
 * `<container_name>` — имя контейнера PostgreSQL
 
