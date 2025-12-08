@@ -253,6 +253,8 @@ with (DAG(
     start_date=datetime(2025, 12, 1),
     schedule_interval=timedelta(hours=1),
     tags=DAG_TAGS,
+    max_active_tasks=2,
+    max_active_runs=1,
 ) as dag):
 
     start_task = EmptyOperator(task_id="start_task", dag=dag)
