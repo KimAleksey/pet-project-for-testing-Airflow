@@ -11,26 +11,9 @@ from airflow.operators.empty import EmptyOperator
 
 import logging
 
-
-def connect_to_postgres() -> str:
-    credentials = WorkingWithPostgres.get_db_credentials()
-
-    alias = WorkingWithPostgres.connect_to_postgres_via_duckdb(
-        dbname=credentials["POSTGRES_DB"],
-        host=credentials["POSTGRES_HOST"],
-        port=credentials["POSTGRES_PORT"],
-        user=credentials["POSTGRES_USER_NAME"],
-        password=credentials["POSTGRES_PASSWORD"],
-        alias="db"
-    )
-
-    if not alias:
-        raise RuntimeError("Failed to connect to PostgreSQL")
-    return alias
-
 def create_table_with_duckdb(**context):
 
-    alias = connect_to_postgres()
+    alias = WorkingWithPostgres.connect_to_postgres()
 
     try:
         duckdb.sql(
@@ -50,14 +33,14 @@ def create_table_with_duckdb(**context):
 
 def create_tmp_table(**context):
 
-    alias = connect_to_postgres()
+    alias = WorkingWithPostgres.connect_to_postgres()
 
     try:
         duckdb.sql(
             f"""
-            DROP TABLE IF EXISTS {alias}.public.jokes_every_day_tmp;
+            DROP TABLE IF EXISTS {alias}.tmp.jokes_every_day_tmp;
             
-            CREATE TABLE IF NOT EXISTS {alias}.public.jokes_every_day_tmp (
+            CREATE TABLE IF NOT EXISTS {alias}.tmp.jokes_every_day_tmp (
                 id INT,
                 load_ts timestamp,
                 type varchar,
@@ -68,14 +51,14 @@ def create_tmp_table(**context):
     except Exception as e:
         raise RuntimeError(f"Failed to create temp table: {e}")
 
-    logging.info(f"Temp table was successfully created: {alias}.public.jokes_every_day_tmp")
+    logging.info(f"Temp table was successfully created: {alias}.tmp.jokes_every_day_tmp")
 
 
 def load_to_tmp_table(**context):
 
     api_url = "https://official-joke-api.appspot.com/jokes/random"
 
-    alias = connect_to_postgres()
+    alias = WorkingWithPostgres.connect_to_postgres()
 
     try:
         request = requests.get(api_url)
@@ -86,7 +69,7 @@ def load_to_tmp_table(**context):
     logging.info(f"Jokes data was successfully retrieved: {joke_data}.")
 
     insert_sql = f"""
-        INSERT INTO {alias}.public.jokes_every_day_tmp (id, load_ts, type, setup, punchline)
+        INSERT INTO {alias}.tmp.jokes_every_day_tmp (id, load_ts, type, setup, punchline)
         VALUES ({int(joke_data["id"])}, 
                 '{datetime.now()}', 
                 '{joke_data["type"].replace("'", "''")}', 
@@ -104,18 +87,18 @@ def load_to_tmp_table(**context):
 
 def load_data_to_postgres(**context):
 
-    alias = connect_to_postgres()
+    alias = WorkingWithPostgres.connect_to_postgres()
 
     try:
         duckdb.sql(
             f"""
             DELETE FROM {alias}.public.jokes_every_day 
             WHERE 
-                id in (SELECT id FROM {alias}.public.jokes_every_day_tmp)
+                id in (SELECT id FROM {alias}.tmp.jokes_every_day_tmp)
             ;
 
             INSERT INTO {alias}.public.jokes_every_day (id, load_ts, type, setup, punchline)
-            SELECT id, load_ts, type, setup, punchline FROM {alias}.public.jokes_every_day_tmp
+            SELECT id, load_ts, type, setup, punchline FROM {alias}.tmp.jokes_every_day_tmp
             ;
             """
         )
@@ -123,7 +106,7 @@ def load_data_to_postgres(**context):
         raise RuntimeError(f"Failed to insert into table {alias}.public.jokes_every_day: {e}.")
 
     logging.info(f"Jokes data was successfully inserted.")
-    logging.info(f"Table {alias}.public.jokes_every_day_tmp was deleted.")
+    logging.info(f"Table {alias}.tmp.jokes_every_day_tmp was deleted.")
 
 
 DAG_OWNER = "kim-av"
