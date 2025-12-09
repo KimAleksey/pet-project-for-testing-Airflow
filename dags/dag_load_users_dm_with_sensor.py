@@ -31,7 +31,7 @@ def create_dm_table(**context):
 
 
 def get_tmp_table_name(**context):
-    tmp_table_name = f"user_count_{context["task_instance"].date()}{context['task_instance'].hour}".replace("-", "")
+    tmp_table_name = f"user_count_{context["execution_date"].date()}{context['execution_date'].hour}".replace("-", "")
     logging.info(f"Tmp table name: dm.user_count.")
     return tmp_table_name
 
@@ -71,15 +71,16 @@ def create_tmp_table(**context):
 def load_users_count_to_tmp_table(**context):
     alias = WorkingWithPostgres().connect_to_postgres()
     tmp_table_name = get_tmp_table_name(**context)
+    ds = context["ds"]
     load_to_tmp_table_sql = f"""
         INSERT INTO {alias}.tmp.{tmp_table_name} (registration_date, cnt)
         SELECT
             login_registration_ts::date AS registration_date,
             count(*) AS cnt
         FROM
-            stg.users_registration
+            {alias}.stg.users_registration
         WHERE
-            login_registration_ts::date = '{{ ds }}'
+            login_registration_ts::date = '{ds}'
         GROUP BY
             login_registration_ts::date;
     """
@@ -89,7 +90,7 @@ def load_users_count_to_tmp_table(**context):
     except Exception as e:
         raise RuntimeError(f"Failed to load {alias}.tmp.{tmp_table_name}. With query: {load_to_tmp_table_sql}. {e}")
 
-    logging.info(f"Loaded data into tmp.{tmp_table_name} for date: {{ ds }}.")
+    logging.info(f"Loaded data into tmp.{tmp_table_name} for date: {ds}.")
 
 
 def load_data_to_users_cnt_table(**context):
@@ -97,7 +98,10 @@ def load_data_to_users_cnt_table(**context):
     tmp_table_name = get_tmp_table_name(**context)
     load_data_to_users_cnt_table_sql = f"""
         INSERT INTO {alias}.dm.users_count (registration_date, cnt)
-        SELECT registration_date, cnt FROM {alias}.tmp.{tmp_table_name}
+        SELECT 
+            registration_date, 
+            cnt 
+        FROM {alias}.tmp.{tmp_table_name}
         ON CONFLICT (registration_date) DO UPDATE SET
             cnt = EXCLUDED.cnt
         ;
@@ -114,7 +118,7 @@ def load_data_to_users_cnt_table(**context):
 
 
 DAG_OWNER = "kim-av"
-DAG_NAME = "dag_load_users_from_api"
+DAG_NAME = "dag_load_users_dm_with_sensor"
 DAG_TAGS = ["example", "duckdb", "postgres", "api", "json", "sensors"]
 
 
@@ -129,21 +133,21 @@ default_args = {
 with DAG(
     dag_id=DAG_NAME,
     default_args=default_args,
-    schedule_interval=None,
+    start_date=datetime(2025, 12, 1),
+    catchup=True,
+    schedule_interval=timedelta(hours=1),
     tags=DAG_TAGS,
-    catchup=False,
-    max_active_runs=1,
-    max_active_tasks=1
+    max_active_runs=3,
+    max_active_tasks=3
 ) as dag:
 
-    # start_task = ExternalTaskSensor(
-    #     task_id="start",
-    #     external_dag_id=
-    # )
-
-    start_task = EmptyOperator(
+    start_task = ExternalTaskSensor(
         task_id="start",
-        dag=dag,
+        external_dag_id="dag_load_users_from_api",
+        external_task_id="end_task",
+        mode="reschedule",
+        poke_interval=60,
+        timeout=3600,
     )
 
     creating_dm_table_task = PythonOperator(
