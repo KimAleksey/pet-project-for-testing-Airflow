@@ -42,6 +42,9 @@ with DAG(
         trigger_dag_id="dag_load_users_dm_started_by_trigger",
         task_id="trigger_dag",
         wait_for_completion=False,
+        logical_date='{{ data_interval_start }}',
+        reset_dag_run=True,
+        # skip_when_already_exists=True
     )
 
     end_task = EmptyOperator(
