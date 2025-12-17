@@ -25,8 +25,8 @@ with DAG(
     catchup=True,
     schedule_interval=timedelta(hours=1),
     tags=DAG_TAGS,
-    max_active_runs=3,
-    max_active_tasks=3
+    max_active_runs=1,
+    max_active_tasks=1
 ) as dag:
 
     start_task = ExternalTaskSensor(

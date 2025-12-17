@@ -39,6 +39,8 @@ with DAG(
     schedule='@daily',
     default_args=default_args,
     tags=DAG_TAGS,
+    max_active_runs=1,
+    max_active_tasks=1,
 ) as dag:
 
     start_task = EmptyOperator(task_id='start_task')

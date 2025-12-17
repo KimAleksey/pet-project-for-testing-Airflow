@@ -30,7 +30,9 @@ with DAG(
     start_date=datetime(2025, 12, 1),
     schedule_interval="@daily",
     default_args=default_args,
-    tags=DAG_TAGS
+    tags=DAG_TAGS,
+    max_active_runs=1,
+    max_active_tasks=1,
 ) as dag:
 
     start_task = EmptyOperator(task_id='start_task')
