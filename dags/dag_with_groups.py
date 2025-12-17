@@ -26,6 +26,7 @@ default_args = {
 
 with DAG(
     dag_id=DAG_ID,
+    description=SHORT_DESCRIPTION,
     schedule_interval='@daily',
     start_date=datetime(2025, 12, 1),
     catchup=True,
@@ -34,6 +35,8 @@ with DAG(
     max_active_runs=1,
     max_active_tasks=1,
 ) as dag:
+
+    dag.doc_md = LONG_DESCRIPTION
 
     start_task = EmptyOperator(task_id="start_task", dag=dag)
 
