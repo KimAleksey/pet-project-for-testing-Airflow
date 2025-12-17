@@ -163,7 +163,7 @@ def load_data_to_tmp_table(**context):
          '{user_data['location']['postcode']}',
          {user_data['location']['coordinates']['latitude']},
          {user_data['location']['coordinates']['longitude']},
-         '{user_data['email']}',
+         '{user_data['email'].replace("'", "''")}',
          {user_data['registered']['age']},
          '{user_data['phone']}',
          '{user_data['cell']}'
