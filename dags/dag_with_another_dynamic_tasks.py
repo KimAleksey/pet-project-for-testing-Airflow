@@ -7,8 +7,14 @@ from pendulum import duration, datetime
 
 import logging
 
-def log_value(value, **context):
-    logging.info(f"Value: {value}")
+def log_value(value):
+    def log(**context):
+        logging.info(f"DAG Message: {str(value)}")
+        logging.info(f"DAG ID: {context['dag'].dag_id}")
+        logging.info(f"Execution Date: {context['execution_date']}")
+        logging.info(f"Task Instance: {context['task_instance']}")
+
+    return log
 
 # Конфигурация DAG
 OWNER = "kim-av"
@@ -48,8 +54,7 @@ with DAG(
     for i in range(3):
         task = PythonOperator(
             task_id="task_another_{}".format(i),
-            python_callable=log_value,
-            op_args=[i],
+            python_callable=log_value(i),
             dag=dag,
         )
         tasks.append(task)
