@@ -1,13 +1,14 @@
+from typing import Callable, Any
+
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
-from airflow.models.baseoperator import chain
 
 from pendulum import duration, datetime
 
 import logging
 
-def log_value(value):
+def log_value(value: Any) -> Callable:
     def log(**context):
         logging.info(f"DAG Message: {str(value)}")
         logging.info(f"DAG ID: {context['dag'].dag_id}")
@@ -16,16 +17,28 @@ def log_value(value):
 
     return log
 
+
+def generate_task_instance(**context) -> list:
+    res = []
+    for i in range(3):
+        res.append(PythonOperator(
+            task_id=f"generated_task_{i}",
+            python_callable=log_value(i),
+            )
+        )
+    return res
+
+
 # Конфигурация DAG
 OWNER = "kim-av"
-DAG_ID = "dag_with_another_dynamic_tasks"
+DAG_ID = "dag_with_yet_another_dynamic_tasks"
 TAGS = ["example", "dynamic", "task"]
 
 LONG_DESCRIPTION = """
 LONG_DESCRIPTION
 """
 
-SHORT_DESCRIPTION = "Пример реализации DAG с динамическим списоком tasks."
+SHORT_DESCRIPTION = "Пример реализации DAG с динамическим списком tasks."
 
 default_args = {
     "owner": OWNER,
@@ -48,16 +61,12 @@ with DAG(
 
     start_task = EmptyOperator(task_id="start", dag=dag)
 
-    tasks = []
-
-    for i in range(3):
-        task = PythonOperator(
-            task_id="task_another_{}".format(i),
-            python_callable=log_value(i),
-            dag=dag,
-        )
-        tasks.append(task)
+    generated_tasks = generate_task_instance()
 
     end_task = EmptyOperator(task_id="end", dag=dag)
 
-    chain(start_task, *tasks, end_task)
+    (
+        start_task
+        >> generated_tasks
+        >> end_task
+    )

@@ -15,11 +15,10 @@ DAG_ID = "dag_with_dynamic_tasks"
 TAGS = ["example", "dynamic", "task"]
 
 LONG_DESCRIPTION = """
-Пример реализации DAG с Group tasks.
-https://airflow.apache.org/docs/apache-airflow/2.0.1/_modules/airflow/example_dags/example_task_group.html
+LONG_DESCRIPTION
 """
 
-SHORT_DESCRIPTION = "Пример реализации DAG с Group tasks."
+SHORT_DESCRIPTION = "Пример реализации DAG с динамическим списком tasks."
 
 default_args = {
     "owner": OWNER,
