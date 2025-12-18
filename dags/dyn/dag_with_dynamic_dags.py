@@ -17,13 +17,13 @@ def get_configs(file_name: str = "dag_config.json") -> list[dict[str, Any]]:
     :param file_name: Путь к JSON файлу с конфигурацией
     :return: Список конфигураций
     """
-    current_path = Path(__file__).parent
+    current_path = Path(__file__).parent.parent
     file_path = current_path / "conf" / file_name
 
     with open(file_path, "r", encoding="utf-8") as f:
-        configs = json.load(f)
+        res = json.load(f)
 
-    return configs["dags"]
+    return res["dags"]
 
 
 def log_info(message: str) -> Callable:
