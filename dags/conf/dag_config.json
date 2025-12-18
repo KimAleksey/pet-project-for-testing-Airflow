@@ -1,15 +1,45 @@
 {
   "dags": [
     {
-
+      "owner": "kim-av",
+      "depends_on_past": false,
+      "retries": 1,
+      "dag_id": "dag_generated_dynamically_01",
+      "description": "Dynamically generated DAG",
+      "schedule_interval": "@daily",
+      "catchup": true,
+      "tags": ["example", "dynamic"],
+      "max_active_runs": 1,
+      "max_active_tasks": 1,
+      "value": "This is DAG 1"
     },
 
     {
-
+      "owner": "kim-av",
+      "depends_on_past": false,
+      "retries": 1,
+      "dag_id": "dag_generated_dynamically_02",
+      "description": "Dynamically generated DAG",
+      "schedule_interval": "@daily",
+      "catchup": true,
+      "tags": ["example", "dynamic"],
+      "max_active_runs": 1,
+      "max_active_tasks": 1,
+      "value": "This is DAG 2"
     },
 
     {
-
+      "owner": "kim-av",
+      "depends_on_past": false,
+      "retries": 1,
+      "dag_id": "dag_generated_dynamically_03",
+      "description": "Dynamically generated DAG",
+      "schedule_interval": "@daily",
+      "catchup": true,
+      "tags": ["example", "dynamic"],
+      "max_active_runs": 1,
+      "max_active_tasks": 1,
+      "value": "This is DAG 3"
     }
   ]
 }
