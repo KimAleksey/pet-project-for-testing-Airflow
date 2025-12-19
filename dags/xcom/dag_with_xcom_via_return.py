@@ -18,13 +18,20 @@ def get_data_from_api(**context):
     return response
 
 
+def get_common_date(**context):
+    common_date = context.get("data_interval_start").format("YYYYMMDDHHmmss")
+    return common_date
+
+
 def print_data_from_api(**context):
     ti = context['ti']
     response = ti.xcom_pull(
         key="return_value",
         task_ids="get_data",
     )
+    common_date = context.get("ti").xcom_pull("get_common_date")
     print(f"Here is the joke: {response["setup"]}...{response["punchline"]}")
+    print(f"Interval start: {common_date}")
 
 
 default_args = {
@@ -48,6 +55,11 @@ with DAG(
 
     start = EmptyOperator(task_id="start", dag=dag)
 
+    get_date_task = PythonOperator(
+        task_id="get_common_date",
+        python_callable=get_common_date,
+    )
+
     get_data = PythonOperator(
         task_id="get_data",
         python_callable=get_data_from_api,
@@ -60,4 +72,4 @@ with DAG(
 
     end = EmptyOperator(task_id="end", dag=dag)
 
-    start >> get_data >> print_data >> end
+    start >> get_date_task >> get_data >> print_data >> end
